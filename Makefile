@@ -47,15 +47,27 @@ status: ## Show cluster status: nodes, GPU, pods, rollouts
 
 .PHONY: up
 up: ## Deploy the LLM serving stack
-	@echo "TODO"
+	@$(SCRIPTS_DIR)/deploy.sh up
 
 .PHONY: down
 down: ## Remove the LLM serving stack
-	@echo "TODO"
+	@$(SCRIPTS_DIR)/deploy.sh down
 
 .PHONY: logs
 logs: ## Tail logs for serving pods
-	@echo "TODO"
+	kubectl logs -n $(NAMESPACE) -l app.kubernetes.io/name=vllm-serving -f --tail=100
+
+.PHONY: port-forward
+port-forward: ## Port-forward stable service to localhost:8000
+	@echo "Forwarding vllm-stable:8000 -> localhost:8000"
+	@echo "Press Ctrl+C to stop"
+	kubectl port-forward -n $(NAMESPACE) svc/vllm-stable 8000:8000
+
+.PHONY: port-forward-preview
+port-forward-preview: ## Port-forward preview service to localhost:8001
+	@echo "Forwarding vllm-preview:8000 -> localhost:8001"
+	@echo "Press Ctrl+C to stop"
+	kubectl port-forward -n $(NAMESPACE) svc/vllm-preview 8001:8000
 
 # ==============================================================================
 # Load Testing

@@ -1,0 +1,94 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: vllm-serving
+  namespace: llm-serving
+  labels:
+    app.kubernetes.io/name: vllm-serving
+    app.kubernetes.io/part-of: llm-zero-downtime
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm-serving
+  strategy:
+    blueGreen:
+      activeService: vllm-stable
+      previewService: vllm-preview
+      autoPromotionEnabled: false
+      # Keep old revision pods around after promotion for graceful drain
+      scaleDownDelaySeconds: 120
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vllm-serving
+        app.kubernetes.io/part-of: llm-zero-downtime
+    spec:
+      terminationGracePeriodSeconds: 90
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.14.1-cu130
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          command: ["vllm", "serve"]
+          args:
+            - "$(MODEL_NAME)"
+            - "--max-model-len"
+            - "$(MAX_MODEL_LEN)"
+            - "--gpu-memory-utilization"
+            - "$(GPU_MEMORY_UTILIZATION)"
+            - "--dtype"
+            - "$(DTYPE)"
+            - "--port"
+            - "$(VLLM_PORT)"
+            - "--host"
+            - "0.0.0.0"
+          envFrom:
+            - configMapRef:
+                name: vllm-config
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+              nvidia.com/gpu: "1"
+
+          # Startup probe: allow up to ~210s for model download + load
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 40
+
+          # Readiness: pod receives traffic only when vLLM is serving
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+
+          # Liveness: restart container if vLLM becomes unresponsive
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 15
+            failureThreshold: 3
+
+          # preStop: delay SIGTERM so in-flight streaming requests can drain.
+          # Sequence: Service selector updated (no new traffic) -> preStop sleeps
+          # -> SIGTERM sent -> vLLM shuts down within remaining grace period.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 60"]
