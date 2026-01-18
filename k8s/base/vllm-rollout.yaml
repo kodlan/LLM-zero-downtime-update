@@ -59,14 +59,14 @@ spec:
               memory: "8Gi"
               nvidia.com/gpu: "1"
 
-          # Startup probe: allow up to ~210s for model download + load
+          # Startup probe: allow up to ~610s for first-time model download + load
           startupProbe:
             httpGet:
               path: /health
               port: 8000
             initialDelaySeconds: 10
-            periodSeconds: 5
-            failureThreshold: 40
+            periodSeconds: 10
+            failureThreshold: 60
 
           # Readiness: pod receives traffic only when vLLM is serving
           readinessProbe:

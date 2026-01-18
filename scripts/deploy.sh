@@ -53,23 +53,28 @@ case "$ACTION" in
     echo "  Command: kubectl apply -f $K8S_BASE/vllm-rollout.yaml"
     kubectl apply -f "$K8S_BASE/vllm-rollout.yaml"
 
-    # Wait for rollout to become healthy
+    # Wait for rollout to become healthy (up to ~10 min for first-time model download)
     log_info "Waiting for Rollout to become healthy..."
-    echo "  (This may take a few minutes for model loading)"
-    for i in $(seq 1 60); do
+    echo "  (First run may take several minutes for model download + loading)"
+    MAX_ATTEMPTS=120
+    for i in $(seq 1 $MAX_ATTEMPTS); do
       PHASE=$(kubectl get rollout vllm-serving -n "$NAMESPACE" \
         -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+      POD_STATUS=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=vllm-serving \
+        -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "Unknown")
+      READY=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=vllm-serving \
+        -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null || echo "false")
       if [[ "$PHASE" == "Healthy" ]]; then
         log_info "Rollout is Healthy."
         break
       fi
-      if [[ "$i" -eq 60 ]]; then
+      if [[ "$i" -eq "$MAX_ATTEMPTS" ]]; then
         log_error "Rollout did not become healthy within timeout."
         log_error "Check pod status: kubectl get pods -n $NAMESPACE"
         log_error "Check pod logs:   kubectl logs -n $NAMESPACE -l app.kubernetes.io/name=vllm-serving"
         exit 1
       fi
-      echo "  Rollout phase: $PHASE (attempt $i/60)"
+      echo "  Rollout: $PHASE | Pod: $POD_STATUS | Ready: $READY (attempt $i/$MAX_ATTEMPTS)"
       sleep 5
     done
 
