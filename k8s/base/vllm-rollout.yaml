@@ -42,6 +42,8 @@ spec:
             - "$(GPU_MEMORY_UTILIZATION)"
             - "--dtype"
             - "$(DTYPE)"
+            - "--max-num-seqs"
+            - "$(MAX_NUM_SEQS)"
             - "--port"
             - "$(VLLM_PORT)"
             - "--host"
