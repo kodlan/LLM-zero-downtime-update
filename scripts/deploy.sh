@@ -76,6 +76,7 @@ case "$ACTION" in
       fi
       echo "  Rollout: $PHASE | Pod: $POD_STATUS | Ready: $READY (attempt $i/$MAX_ATTEMPTS)"
       sleep 5
+
     done
 
     echo ""

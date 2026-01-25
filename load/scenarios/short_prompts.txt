@@ -1,0 +1,10 @@
+Explain the concept of zero-downtime deployment in three sentences.
+Write a short Python function that reverses a string.
+What is the difference between blue-green and canary deployments?
+Summarize the benefits of container orchestration.
+Describe how a load balancer distributes traffic.
+What are the main advantages of using Kubernetes?
+Explain what a rolling update is in simple terms.
+Write a bash one-liner that counts the number of files in a directory.
+What is the purpose of a health check endpoint in a web service?
+Describe the difference between horizontal and vertical scaling.

@@ -8,6 +8,12 @@ SHELL := /bin/bash
 NAMESPACE := llm-serving
 SCRIPTS_DIR := scripts
 
+# Load test settings (override with: make load LOAD_CONCURRENCY=8)
+LOAD_URL ?= http://localhost:8000
+LOAD_CONCURRENCY ?= 4
+LOAD_DURATION ?= 30
+LOAD_MAX_TOKENS ?= 100
+
 # ==============================================================================
 # Cluster Bootstrap
 # ==============================================================================
@@ -73,13 +79,23 @@ port-forward-preview: ## Port-forward preview service to localhost:8001
 # Load Testing
 # ==============================================================================
 
+.PHONY: smoke
+smoke: ## Run smoke tests (health, non-streaming, streaming)
+	@$(SCRIPTS_DIR)/smoke_test.sh $(LOAD_URL)
+
 .PHONY: load
 load: ## Run streaming load test
-	@echo "TODO"
+	@python3 load/stream_load.py \
+		--url $(LOAD_URL) \
+		--concurrency $(LOAD_CONCURRENCY) \
+		--duration $(LOAD_DURATION) \
+		--max-tokens $(LOAD_MAX_TOKENS) \
+		--prompts-file load/scenarios/short_prompts.txt \
+		--output /tmp/stream_load_results.json
 
 .PHONY: verify
 verify: ## Run no-downtime verification
-	@echo "TODO"
+	@$(SCRIPTS_DIR)/verify_no_downtime.sh $(LOAD_URL)
 
 # ==============================================================================
 # Rollout Operations
