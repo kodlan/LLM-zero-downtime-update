@@ -56,10 +56,10 @@ check_result() {
     local message="$2"
     if [[ "$status" == "ok" ]]; then
         echo -e "  ${GREEN}[PASS]${NC} $message"
-        ((CHECKS_PASSED++))
+        CHECKS_PASSED=$((CHECKS_PASSED + 1))
     else
         echo -e "  ${RED}[FAIL]${NC} $message"
-        ((CHECKS_FAILED++))
+        CHECKS_FAILED=$((CHECKS_FAILED + 1))
     fi
 }
 

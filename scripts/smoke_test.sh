@@ -28,10 +28,10 @@ print_result() {
     local message="$2"
     if [[ "$status" == "ok" ]]; then
         echo -e "  ${GREEN}[PASS]${NC} $message"
-        ((PASSED++))
+        PASSED=$((PASSED + 1))
     else
         echo -e "  ${RED}[FAIL]${NC} $message"
-        ((FAILED++))
+        FAILED=$((FAILED + 1))
     fi
 }
 
