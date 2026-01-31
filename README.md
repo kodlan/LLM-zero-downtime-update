@@ -90,6 +90,16 @@ Runs the full verification suite:
 
 Thresholds are configurable via environment variables (`MAX_ERROR_RATE`, `MAX_5XX_RATE`, `MIN_STREAM_COMPLETION`).
 
+## Known Limitations
+
+### Single-GPU constraint
+
+Both the stable and preview pods request `nvidia.com/gpu: 1`. On a single-GPU machine, Kubernetes cannot schedule both at the same time — the preview pod will stay `Pending` until the active pod releases the GPU.
+
+This means a true blue/green rollout (both revisions running simultaneously) is not possible on one GPU. The rollout scripts handle this by scaling down the old pod first, freeing the GPU for the new revision, and then promoting. There will be a brief unavailability window between the old pod stopping and the new pod becoming ready.
+
+The Kubernetes manifests are written for the general (multi-GPU/multi-node) case. The single-GPU orchestration is handled at the script level so the same manifests work unchanged in production.
+
 ## Project Layout
 
 ```
